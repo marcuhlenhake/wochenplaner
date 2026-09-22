@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#2f7d4f">
+  <title>Wochenplaner</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="icon" href="icon-192.png" type="image/png" sizes="192x192">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Wochenplaner</h1>
+    <p class="sub">Rezepte aus den aktuellen Angeboten deiner Supermärkte</p>
+  </header>
+
+  <main>
+    <div id="notice" class="notice" hidden></div>
+
+    <form id="form" autocomplete="off">
+      <section>
+        <h2>1 · Wo wohnst du?</h2>
+        <label for="zip">Postleitzahl</label>
+        <input id="zip" inputmode="numeric" pattern="\d{5}" maxlength="5" placeholder="z. B. 45127" required>
+      </section>
+
+      <section>
+        <h2>2 · Wo kaufst du ein?</h2>
+        <div id="retailers" class="chips" role="group" aria-label="Supermärkte"></div>
+      </section>
+
+      <section>
+        <h2>3 · Was magst du nicht?</h2>
+        <div class="row">
+          <input id="dislike-input" placeholder="z. B. Pilze" aria-label="Zutat, die du nicht magst" enterkeyhint="done">
+          <button type="button" id="dislike-add" class="secondary">Hinzufügen</button>
+        </div>
+        <div id="dislikes" class="chips tags"></div>
+      </section>
+
+      <section>
+        <h2>4 · Für wen?</h2>
+        <div class="row">
+          <div class="grow">
+            <label for="persons">Personen</label>
+            <select id="persons"></select>
+          </div>
+          <div class="grow">
+            <label for="diet">Ernährung</label>
+            <select id="diet">
+              <option value="alles">Alles</option>
+              <option value="vegetarisch">Vegetarisch</option>
+              <option value="vegan">Vegan</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <button type="submit" id="go" class="primary">Wochenplan erstellen</button>
+    </form>
+
+    <div id="loading" hidden>Angebote werden geladen und Rezepte geplant … das dauert etwa eine halbe Minute.</div>
+
+    <div id="result" hidden>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-plan" aria-selected="true">Wochenplan</button>
+        <button role="tab" id="tab-shop" aria-selected="false">Einkaufsliste</button>
+      </div>
+      <div class="metarow">
+        <div id="meta" class="meta"></div>
+        <button type="button" id="delete-plan" class="secondary small">Plan löschen</button>
+      </div>
+      <div id="warnings" class="notice warn" hidden></div>
+      <div id="plan"></div>
+      <div id="shop" hidden></div>
+    </div>
+  </main>
+
+  <dialog id="token-dialog" aria-labelledby="token-title">
+    <form method="dialog">
+      <h2 id="token-title">Zugangscode</h2>
+      <p id="token-msg"></p>
+      <input id="token-input" type="password" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Zugangscode" required>
+      <div class="row dialog-actions">
+        <button type="button" id="token-cancel" class="secondary">Abbrechen</button>
+        <button type="submit" value="ok" class="primary">Speichern</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" type="module"></script>
+</body>
+</html>

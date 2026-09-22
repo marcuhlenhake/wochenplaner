@@ -1,0 +1,19 @@
+# Render "Blueprint": Render erkennt diese Datei automatisch und schlägt die Einstellungen vor.
+# Die drei geheimen Werte (ANTHROPIC_API_KEY, ACCESS_TOKEN, HOST) werden bewusst NICHT hier eingetragen,
+# sondern im Render-Dashboard unter Environment gesetzt (siehe README).
+services:
+  - type: web
+    name: wochenplaner
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.mjs
+    envVars:
+      - key: OFFERS_PROVIDER
+        value: marktguru
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: ACCESS_TOKEN
+        sync: false
+      - key: HOST
+        value: 0.0.0.0
