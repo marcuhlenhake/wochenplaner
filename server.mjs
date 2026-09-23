@@ -14,7 +14,9 @@ const PUBLIC = path.join(ROOT, "public");
 loadDotEnv(path.join(ROOT, ".env"));
 
 const PORT = Number(process.env.PORT || 3000);
-const HOST = process.env.HOST || "127.0.0.1";
+// Render (und die meisten anderen Hoster) setzen RENDER bzw. PORT automatisch und erwarten,
+// dass der Dienst auf allen Adressen lauscht. Lokal ohne diese Variablen bleibt es beim sicheren 127.0.0.1.
+const HOST = process.env.HOST || (process.env.RENDER || process.env.PORT ? "0.0.0.0" : "127.0.0.1");
 const DIETS = ["alles", "vegetarisch", "vegan"];
 const TYPES = {
   ".html": "text/html; charset=utf-8",
