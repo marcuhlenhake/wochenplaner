@@ -58,7 +58,7 @@ test("enrichPlan ersetzt IDs, ignoriert erfundene und meldet Abneigungen", () =>
   const offers = SAMPLE_OFFERS;
   const plan = {
     days: [
-      { day: "Montag", title: "Pilzpfanne", minutes: 20, steps: ["kochen"], ingredients: [
+      { day: "Montag", title: "Pilzpfanne", minutes: 20, steps: ["kochen"], nutrition: { kcal: 512.7, protein_g: "18", carbs_g: -3, fat_g: "viel" }, ingredients: [
         { name: "Champignons", amount: "400 g", offerId: "s14" },
         { name: "Salz", amount: "1 TL" },
         { name: "Trüffel", amount: "10 g", offerId: "erfunden" },
@@ -68,12 +68,19 @@ test("enrichPlan ersetzt IDs, ignoriert erfundene und meldet Abneigungen", () =>
   const out = enrichPlan(plan, offers, ["champignon"]);
   const [champ, salz, truffle] = out.days[0].ingredients;
   assert.equal(champ.offer.retailer, "LIDL");
+  // Nährwerte sind nur eine Schätzung: gerundet, keine negativen Zahlen, unbrauchbare Werte werden zu null statt 0.
+  assert.deepEqual(out.days[0].nutrition, { kcal: 513, protein_g: 18, carbs_g: 0, fat_g: null });
   assert.equal(salz.offer, null);
   assert.equal(truffle.offer, null);
   assert.equal(out.warnings.length, 1);
   const shopping = buildShopping(out.days);
   assert.equal(shopping.length, 1);
   assert.equal(shopping[0].total, 1.49);
+});
+
+test("enrichPlan setzt fehlenden Nährwert auf null statt 0", () => {
+  const plan = { days: [{ day: "Montag", title: "X", minutes: 5, steps: [], ingredients: [] }] };
+  assert.equal(enrichPlan(plan, [], []).days[0].nutrition, null);
 });
 
 test("selectOffers verteilt reihum auf Märkte und entfernt Doppelte", () => {

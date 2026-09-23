@@ -14,6 +14,7 @@ Web-App (PWA) für Android: Du wählst Postleitzahl und Supermärkte, trägst ei
 - **Plan bleibt gespeichert:** Wochenplan, Einkaufsliste und abgehakte Artikel liegen im Browser (localStorage) und überstehen ein Neuladen. „Plan löschen“ entfernt ihn. Sind Angebote abgelaufen, weist die Seite darauf hin.
 - **Mehr Angebote:** Die Suche fragt ca. 135 Begriffe mit bis zu zwei Ergebnisseiten ab. Weitere Begriffe ergänzt du ohne Codeänderung in `.env`, z. B. `OFFER_QUERIES_EXTRA=hirse,ziegenkäse,tempeh`. Vor dem Senden an Claude werden Doppelte entfernt und die Angebote reihum auf die Märkte verteilt (max. 400).
 - **Symbole:** PNG-Symbole für Android und iOS liegen in `public/`. Neu erzeugen mit `node tools/make-icons.mjs`.
+- **Nährwerte:** Zu jedem Gericht schätzt Claude Kalorien, Eiweiß, Kohlenhydrate und Fett pro Portion anhand der Zutatenmengen. Das ist eine grobe KI-Schätzung, keine Laboranalyse – für eine verlässliche Zählung (z. B. bei einer Diät) taugt sie nicht.
 
 ## Starten
 

@@ -169,9 +169,9 @@ function renderPlan(openDay) {
   $("plan").replaceChildren(
     ...plan.days.map((d, i) => {
       const details = el("details", { className: "day", open: openDay ? d.day === openDay : i === 0 });
-      details.append(
-        el("summary", {}, el("span", { className: "dname", textContent: `${d.day} · ${d.minutes} Min.` }), el("span", { className: "dtitle", textContent: d.title })),
-      );
+      const dname = el("span", { className: "dname", textContent: `${d.day} · ${d.minutes} Min.` });
+      if (d.nutrition?.kcal != null) dname.append(el("span", { className: "kcal", textContent: ` · ${d.nutrition.kcal} kcal/Portion` }));
+      details.append(el("summary", {}, dname, el("span", { className: "dtitle", textContent: d.title })));
       const ings = el("ul");
       for (const ing of d.ingredients) {
         const li = el("li", { textContent: `${ing.amount} ${ing.name}` });
@@ -182,7 +182,24 @@ function renderPlan(openDay) {
       const swap = el("button", { type: "button", className: "swap", textContent: "Anderes Gericht" });
       const message = el("p", { className: "swap-error", role: "alert" });
       swap.addEventListener("click", () => swapDay(i, swap, message));
-      details.append(el("div", { className: "body" }, el("strong", { textContent: "Zutaten" }), ings, el("strong", { textContent: "Zubereitung" }), steps, swap, message));
+      const body = [el("strong", { textContent: "Zutaten" }), ings];
+      if (d.nutrition) {
+        const n = d.nutrition;
+        const parts = [
+          n.kcal != null && `${n.kcal} kcal`,
+          n.protein_g != null && `${n.protein_g} g Eiweiß`,
+          n.carbs_g != null && `${n.carbs_g} g Kohlenhydrate`,
+          n.fat_g != null && `${n.fat_g} g Fett`,
+        ].filter(Boolean);
+        if (parts.length) {
+          body.push(
+            el("strong", { textContent: "Nährwert pro Portion (geschätzt)" }),
+            el("p", { className: "nutrition", textContent: parts.join(" · ") }),
+          );
+        }
+      }
+      body.push(el("strong", { textContent: "Zubereitung" }), steps, swap, message);
+      details.append(el("div", { className: "body" }, ...body));
       return details;
     }),
   );

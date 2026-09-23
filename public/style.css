@@ -122,6 +122,8 @@ button.swap { width: 100%; }
 .day summary { list-style: none; cursor: pointer; padding: 12px 14px; display: flex; flex-direction: column; min-height: 44px; }
 .day summary::-webkit-details-marker { display: none; }
 .day .dname { font-size: .8rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.day .dname .kcal { text-transform: none; letter-spacing: normal; }
+.nutrition { color: var(--muted); font-size: .9rem; margin: 4px 0 12px; }
 .day .dtitle { font-weight: 600; }
 .day .body { padding: 0 14px 14px; }
 .day ul, .day ol { margin: 6px 0 12px; padding-left: 20px; }
