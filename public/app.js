@@ -216,11 +216,12 @@ function renderPlan(openDay) {
           plan.checked = [...checked];
           savePlan();
         });
-        box.append(el("label", {}, cb, el("span", {}, `${it.product} · ${eur(it.price)}`, ...it.needs.map((n) => el("span", { className: "need", textContent: n })))));
+        const count = el("span", { className: "need", textContent: `${it.count}× Packung` });
+        box.append(el("label", {}, cb, el("span", {}, `${it.product} · ${eur(it.price)}`, count)));
       }
       return box;
     }),
-    el("p", { className: "meta", textContent: "Preise laut Angebotsquelle (Angebotspreis der Packung); Vorratszutaten wie Öl oder Gewürze sind nicht enthalten." }),
+    el("p", { className: "meta", textContent: "Menge in Packungen geschätzt und aufgerundet, Preise laut Angebotsquelle; Vorratszutaten wie Öl oder Gewürze sind nicht enthalten." }),
   );
   $("result").hidden = false;
 }

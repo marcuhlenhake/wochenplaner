@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { filterOffers } from "../lib/offers.mjs";
 import { normalizeOffer, parseKeys } from "../lib/marktguru.mjs";
 import { SAMPLE_OFFERS } from "../lib/sample-offers.mjs";
-import { enrichPlan, buildPrompt, buildSwapPrompt, buildShopping, buildShareText, groupOffers, requestPlan, requestSwap, selectOffers, isSimilarTitle } from "../lib/planner.mjs";
+import { enrichPlan, buildPrompt, buildSwapPrompt, buildShopping, buildShareText, groupOffers, packagesFor, requestPlan, requestSwap, selectOffers, isSimilarTitle } from "../lib/planner.mjs";
 import { retailerIdFor } from "../lib/retailers.mjs";
 import { validateRequest, validateSwap, checkAccess, createServer } from "../server.mjs";
 
@@ -81,16 +81,18 @@ test("enrichPlan ersetzt IDs, ignoriert erfundene und meldet Abneigungen", () =>
 test("buildShareText lässt abgehakte Artikel weg und gruppiert nach Markt", () => {
   const plan = { days: [
     { day: "Montag", title: "X", minutes: 10, steps: [], ingredients: [
-      { name: "Reis", amount: "200 g", offer: { retailer: "REWE", product: "Reis", price: 1.99 } },
-      { name: "Feta", amount: "200 g", offer: { retailer: "LIDL", product: "Feta", price: 1.29 } },
+      { name: "Reis", amount: "200 g", offer: { retailer: "REWE", product: "Reis", description: "200 g", price: 1.99 } },
+      { name: "Feta", amount: "200 g", offer: { retailer: "LIDL", product: "Feta", description: "200 g", price: 1.29 } },
     ] },
     { day: "Dienstag", title: "Y", minutes: 10, steps: [], ingredients: [
-      { name: "Reis", amount: "100 g", offer: { retailer: "REWE", product: "Reis", price: 1.99 } },
+      { name: "Reis", amount: "100 g", offer: { retailer: "REWE", product: "Reis", description: "200 g", price: 1.99 } },
     ] },
   ] };
   const full = buildShareText(plan.days, []);
   assert.match(full, /REWE:/);
-  assert.match(full, /- Reis \(1,99 €\) – 200 g, 100 g/);
+  // 200 g + 100 g benötigt, Packungsgröße 200 g -> aufgerundet 2 Packungen
+  assert.match(full, /- Reis \(1,99 €\) – 2× Packung/);
+  assert.match(full, /- Feta \(1,29 €\) – 1× Packung/);
   assert.match(full, /LIDL:/);
 
   const partial = buildShareText(plan.days, ["LIDL|Feta"]);
@@ -98,6 +100,20 @@ test("buildShareText lässt abgehakte Artikel weg und gruppiert nach Markt", () 
   assert.match(partial, /REWE/);
 
   assert.equal(buildShareText(plan.days, ["REWE|Reis", "LIDL|Feta"]), null);
+});
+
+test("packagesFor rechnet Mengen in Gebinde um und rundet auf", () => {
+  assert.equal(packagesFor(["400 g"], "500 g"), 1);
+  assert.equal(packagesFor(["600 g"], "500 g"), 2); // rundet auf, auch knapp über der Packungsgröße
+  assert.equal(packagesFor(["0,5 kg", "300 g"], "500 g"), 2); // Einheiten (kg/g) werden umgerechnet
+  assert.equal(packagesFor(["250 ml", "0,5 l"], "1 l"), 1);
+  assert.equal(packagesFor(["6 Stück"], "10 Stück"), 1);
+  // Einheiten passen nicht zusammen (Gramm vs. Stück) -> Anzahl der Verwendungen als Mindestmenge
+  assert.equal(packagesFor(["2 Stück"], "500 g"), 1);
+  assert.equal(packagesFor(["1 Dose", "1 Dose"], "400 g"), 2);
+  // Ohne Packungsgröße oder bei unlesbarem Text ebenfalls der Rückfall
+  assert.equal(packagesFor(["1 Bund"], undefined), 1);
+  assert.equal(packagesFor(["nach Geschmack"], "1 kg"), 1);
 });
 
 test("groupOffers gruppiert nach Markt, sortiert alphabetisch und ignoriert unbekannte Ketten", () => {
