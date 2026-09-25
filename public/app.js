@@ -1,4 +1,4 @@
-import { buildShopping, buildShareText, groupOffers } from "./shopping.js";
+import { buildShopping, buildShareText, buildPlanShareText, buildOffersShareText, groupOffers } from "./shopping.js";
 
 const $ = (id) => document.getElementById(id);
 const SETTINGS_KEY = "wochenplaner.settings.v1";
@@ -166,7 +166,7 @@ function renderPlan(openDay) {
   warn.hidden = !plan.warnings.length;
   warn.textContent = plan.warnings.length ? `Prüfe bitte: ${plan.warnings.join("; ")}` : "";
 
-  $("plan").replaceChildren(
+  $("plan-days").replaceChildren(
     ...plan.days.map((d, i) => {
       const details = el("details", { className: "day", open: openDay ? d.day === openDay : i === 0 });
       const dname = el("span", { className: "dname", textContent: `${d.day} · ${d.minutes} Min.` });
@@ -226,12 +226,13 @@ function renderPlan(openDay) {
   $("result").hidden = false;
 }
 
-async function shareShoppingList() {
-  const text = buildShareText(state.plan.days, state.plan.checked);
-  if (!text) return showNotice("Alles schon abgehakt – nichts mehr zu teilen.", "info");
+// Gemeinsamer Teilen-Weg für alle drei Reiter: Web-Share-Menü, sonst Zwischenablage, sonst ein Dialog
+// mit dem Text zum manuellen Kopieren. `text` ist null, wenn es (noch) nichts zu teilen gibt.
+async function shareText(text, { title, emptyMessage }) {
+  if (!text) return showNotice(emptyMessage, "info");
   if (navigator.share) {
     try {
-      await navigator.share({ title: "Einkaufsliste", text });
+      await navigator.share({ title, text });
     } catch (err) {
       if (err.name !== "AbortError") showShareFallback(text);
     }
@@ -240,7 +241,7 @@ async function shareShoppingList() {
   if (navigator.clipboard?.writeText) {
     try {
       await navigator.clipboard.writeText(text);
-      return showNotice("Einkaufsliste in die Zwischenablage kopiert.", "info");
+      return showNotice("In die Zwischenablage kopiert.", "info");
     } catch {
       /* Rückfall unten */
     }
@@ -252,6 +253,16 @@ function showShareFallback(text) {
   $("share-text").value = text;
   $("share-dialog").showModal();
 }
+
+const shareShoppingList = () =>
+  shareText(buildShareText(state.plan.days, state.plan.checked), { title: "Einkaufsliste", emptyMessage: "Alles schon abgehakt – nichts mehr zu teilen." });
+
+const sharePlan = () => shareText(buildPlanShareText(state.plan.days), { title: "Wochenplan", emptyMessage: "Kein Wochenplan zum Teilen vorhanden." });
+
+const shareOffers = () => {
+  if (!offersCache) return showNotice("Bitte zuerst den Reiter „Angebote“ abwarten, bis die Angebote geladen sind.", "info");
+  return shareText(buildOffersShareText(offersCache.offers), { title: "Angebote", emptyMessage: "Keine Angebote zum Teilen vorhanden." });
+};
 
 const TABS = ["plan", "shop", "offers"];
 
@@ -271,7 +282,7 @@ async function loadOffersTab() {
   const { zip, retailers, dislikes } = state.plan.request;
   const key = JSON.stringify({ zip, retailers, dislikes });
   if (offersCache?.key === key) return renderOffers(offersCache.offers, offersCache.provider);
-  const box = $("offers");
+  const box = $("offers-groups");
   box.replaceChildren(el("p", { className: "meta", textContent: "Angebote werden geladen …" }));
   try {
     const data = await postJson("/api/offers", { zip, retailers, dislikes });
@@ -283,7 +294,7 @@ async function loadOffersTab() {
 }
 
 function renderOffers(offers, provider) {
-  const box = $("offers");
+  const box = $("offers-groups");
   if (!offers.length) return box.replaceChildren(el("p", { className: "meta", textContent: "Keine Angebote gefunden." }));
   box.replaceChildren(
     el("p", { className: "meta", textContent: `${offers.length} Angebote${provider === "sample" ? " (Demodaten)" : ""}` }),
@@ -373,7 +384,9 @@ async function init() {
   $("tab-offers").addEventListener("click", () => selectTab("offers"));
   $("delete-plan").addEventListener("click", deletePlan);
   $("token-cancel").addEventListener("click", () => $("token-dialog").close("cancel"));
+  $("share-plan").addEventListener("click", sharePlan);
   $("share-shop").addEventListener("click", shareShoppingList);
+  $("share-offers").addEventListener("click", shareOffers);
   $("share-close").addEventListener("click", () => $("share-dialog").close());
   $("share-copy").addEventListener("click", async () => {
     try {

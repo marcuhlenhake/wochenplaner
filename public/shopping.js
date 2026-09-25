@@ -65,6 +65,8 @@ export function groupOffers(offers) {
     .sort((a, b) => a.retailer.localeCompare(b.retailer, "de"));
 }
 
+const formatEur = (n) => (n == null ? "" : ` (${n.toFixed(2).replace(".", ",")} €)`);
+
 // Textform der Liste zum Teilen (Web-Share-Menü, Zwischenablage). Bereits abgehakte Artikel werden
 // weggelassen, weil "teilen" typischerweise vor dem Einkauf passiert, um zu zeigen, was noch fehlt.
 // Gibt null zurück, wenn nichts mehr offen ist.
@@ -74,11 +76,37 @@ export function buildShareText(days, checkedKeys = []) {
     .map((g) => ({ retailer: g.retailer, items: g.items.filter((it) => !checked.has(`${g.retailer}|${it.product}`)) }))
     .filter((g) => g.items.length);
   if (!groups.length) return null;
-  const money = (n) => (n == null ? "" : ` (${n.toFixed(2).replace(".", ",")} €)`);
   const lines = ["Einkaufsliste"];
   for (const g of groups) {
     lines.push("", `${g.retailer}:`);
-    for (const it of g.items) lines.push(`- ${it.product}${money(it.price)} – ${it.count}× Packung`);
+    for (const it of g.items) lines.push(`- ${it.product}${formatEur(it.price)} – ${it.count}× Packung`);
+  }
+  return lines.join("\n");
+}
+
+// Textform des Wochenplans zum Teilen: alle sieben Gerichte mit Zutaten, ohne Angebotsbezug.
+export function buildPlanShareText(days) {
+  if (!days?.length) return null;
+  const lines = ["Wochenplan"];
+  for (const d of days) {
+    lines.push("", `${d.day}: ${d.title} (${d.minutes} Min.)`);
+    if (d.nutrition?.kcal != null) lines.push(`${d.nutrition.kcal} kcal pro Portion`);
+    for (const ing of d.ingredients) lines.push(`- ${ing.amount} ${ing.name}`);
+  }
+  return lines.join("\n");
+}
+
+// Textform aller gefundenen Angebote (Reiter "Angebote") zum Teilen, unabhängig vom Wochenplan.
+export function buildOffersShareText(offers) {
+  const groups = groupOffers(offers);
+  if (!groups.length) return null;
+  const lines = ["Angebote"];
+  for (const g of groups) {
+    lines.push("", `${g.retailer}:`);
+    for (const o of g.items) {
+      const meta = [o.description, o.validTo ? `gültig bis ${new Date(o.validTo).toLocaleDateString("de-DE")}` : null].filter(Boolean).join(", ");
+      lines.push(`- ${o.product}${formatEur(o.price)}${meta ? ` – ${meta}` : ""}`);
+    }
   }
   return lines.join("\n");
 }

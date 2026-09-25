@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { filterOffers } from "../lib/offers.mjs";
 import { normalizeOffer, parseKeys } from "../lib/marktguru.mjs";
 import { SAMPLE_OFFERS } from "../lib/sample-offers.mjs";
-import { enrichPlan, buildPrompt, buildSwapPrompt, buildShopping, buildShareText, groupOffers, packagesFor, requestPlan, requestSwap, selectOffers, isSimilarTitle } from "../lib/planner.mjs";
+import {
+  enrichPlan, buildPrompt, buildSwapPrompt, buildShopping, buildShareText, buildPlanShareText, buildOffersShareText,
+  groupOffers, packagesFor, requestPlan, requestSwap, selectOffers, isSimilarTitle,
+} from "../lib/planner.mjs";
 import { retailerIdFor } from "../lib/retailers.mjs";
 import { validateRequest, validateSwap, checkAccess, createServer } from "../server.mjs";
 
@@ -100,6 +103,28 @@ test("buildShareText lässt abgehakte Artikel weg und gruppiert nach Markt", () 
   assert.match(partial, /REWE/);
 
   assert.equal(buildShareText(plan.days, ["REWE|Reis", "LIDL|Feta"]), null);
+});
+
+test("buildPlanShareText listet alle Tage mit Zutaten und Nährwert", () => {
+  const days = [
+    { day: "Montag", title: "Reispfanne", minutes: 20, nutrition: { kcal: 540 }, steps: [], ingredients: [{ name: "Reis", amount: "200 g", offer: null }] },
+    { day: "Dienstag", title: "Salat", minutes: 10, nutrition: null, steps: [], ingredients: [{ name: "Salat", amount: "1 Kopf", offer: null }] },
+  ];
+  const text = buildPlanShareText(days);
+  assert.match(text, /^Wochenplan/);
+  assert.match(text, /Montag: Reispfanne \(20 Min\.\)/);
+  assert.match(text, /540 kcal pro Portion/);
+  assert.match(text, /- 200 g Reis/);
+  assert.match(text, /Dienstag: Salat \(10 Min\.\)/);
+  assert.equal(buildPlanShareText([]), null);
+});
+
+test("buildOffersShareText listet alle Angebote gruppiert nach Markt", () => {
+  const text = buildOffersShareText(SAMPLE_OFFERS.filter((o) => o.retailerId === "lidl"));
+  assert.match(text, /^Angebote/);
+  assert.match(text, /LIDL:/);
+  assert.match(text, /- Feta \(1,29 €\) – 200 g/);
+  assert.equal(buildOffersShareText([]), null);
 });
 
 test("packagesFor rechnet Mengen in Gebinde um und rundet auf", () => {
