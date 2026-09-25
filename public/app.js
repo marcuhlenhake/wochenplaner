@@ -1,4 +1,4 @@
-import { buildShopping } from "./shopping.js";
+import { buildShopping, buildShareText } from "./shopping.js";
 
 const $ = (id) => document.getElementById(id);
 const SETTINGS_KEY = "wochenplaner.settings.v1";
@@ -205,7 +205,7 @@ function renderPlan(openDay) {
   );
 
   const checked = new Set(plan.checked);
-  $("shop").replaceChildren(
+  $("shop-groups").replaceChildren(
     ...buildShopping(plan.days).map((g) => {
       const box = el("div", { className: "shopgroup" }, el("h3", {}, el("span", { textContent: g.retailer }), el("span", { textContent: eur(g.total) })));
       for (const it of g.items) {
@@ -223,6 +223,33 @@ function renderPlan(openDay) {
     el("p", { className: "meta", textContent: "Preise laut Angebotsquelle (Angebotspreis der Packung); Vorratszutaten wie Öl oder Gewürze sind nicht enthalten." }),
   );
   $("result").hidden = false;
+}
+
+async function shareShoppingList() {
+  const text = buildShareText(state.plan.days, state.plan.checked);
+  if (!text) return showNotice("Alles schon abgehakt – nichts mehr zu teilen.", "info");
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: "Einkaufsliste", text });
+    } catch (err) {
+      if (err.name !== "AbortError") showShareFallback(text);
+    }
+    return;
+  }
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return showNotice("Einkaufsliste in die Zwischenablage kopiert.", "info");
+    } catch {
+      /* Rückfall unten */
+    }
+  }
+  showShareFallback(text);
+}
+
+function showShareFallback(text) {
+  $("share-text").value = text;
+  $("share-dialog").showModal();
 }
 
 function selectTab(name) {
@@ -296,6 +323,17 @@ async function init() {
   $("tab-shop").addEventListener("click", () => selectTab("shop"));
   $("delete-plan").addEventListener("click", deletePlan);
   $("token-cancel").addEventListener("click", () => $("token-dialog").close("cancel"));
+  $("share-shop").addEventListener("click", shareShoppingList);
+  $("share-close").addEventListener("click", () => $("share-dialog").close());
+  $("share-copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText($("share-text").value);
+      $("share-dialog").close();
+      showNotice("Einkaufsliste in die Zwischenablage kopiert.", "info");
+    } catch {
+      $("share-text").select();
+    }
+  });
   for (const id of ["zip", "persons", "diet"]) $(id).addEventListener("change", saveSettings);
 
   const stored = readStore(PLAN_KEY);

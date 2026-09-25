@@ -75,7 +75,10 @@
       </div>
       <div id="warnings" class="notice warn" hidden></div>
       <div id="plan"></div>
-      <div id="shop" hidden></div>
+      <div id="shop" hidden>
+        <button type="button" id="share-shop" class="secondary share-btn">Liste teilen</button>
+        <div id="shop-groups"></div>
+      </div>
     </div>
   </main>
 
@@ -89,6 +92,16 @@
         <button type="submit" value="ok" class="primary">Speichern</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="share-dialog" aria-labelledby="share-title">
+    <h2 id="share-title">Einkaufsliste</h2>
+    <p>Teilen ist auf diesem Gerät nicht möglich. Text kopieren und selbst einfügen:</p>
+    <textarea id="share-text" readonly rows="10"></textarea>
+    <div class="row dialog-actions">
+      <button type="button" id="share-close" class="secondary">Schließen</button>
+      <button type="button" id="share-copy" class="primary">In Zwischenablage kopieren</button>
+    </div>
   </dialog>
 
   <script src="app.js" type="module"></script>

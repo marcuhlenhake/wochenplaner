@@ -14,6 +14,7 @@ Web-App (PWA) für Android: Du wählst Postleitzahl und Supermärkte, trägst ei
 - **Plan bleibt gespeichert:** Wochenplan, Einkaufsliste und abgehakte Artikel liegen im Browser (localStorage) und überstehen ein Neuladen. „Plan löschen“ entfernt ihn. Sind Angebote abgelaufen, weist die Seite darauf hin.
 - **Mehr Angebote:** Die Suche fragt ca. 135 Begriffe mit bis zu zwei Ergebnisseiten ab. Weitere Begriffe ergänzt du ohne Codeänderung in `.env`, z. B. `OFFER_QUERIES_EXTRA=hirse,ziegenkäse,tempeh`. Vor dem Senden an Claude werden Doppelte entfernt und die Angebote reihum auf die Märkte verteilt (max. 400).
 - **Symbole:** PNG-Symbole für Android und iOS liegen in `public/`. Neu erzeugen mit `node tools/make-icons.mjs`.
+- **Liste teilen:** In der Einkaufsliste teilt „Liste teilen“ die noch offenen Artikel (bereits abgehakte werden weggelassen) über das Teilen-Menü des Handys, z. B. an WhatsApp, Notizen oder E-Mail. Ohne Teilen-Funktion landet der Text in der Zwischenablage, als letzter Rückfall in einem Textfeld zum manuellen Kopieren. Eine direkte Übergabe an die Alexa-Einkaufsliste ist nicht möglich – Amazon hat die dafür nötige Schnittstelle für Drittanbieter am 1. Juli 2024 abgeschaltet.
 - **Nährwerte:** Zu jedem Gericht schätzt Claude Kalorien, Eiweiß, Kohlenhydrate und Fett pro Portion anhand der Zutatenmengen. Das ist eine grobe KI-Schätzung, keine Laboranalyse – für eine verlässliche Zählung (z. B. bei einer Diät) taugt sie nicht.
 
 ## Starten

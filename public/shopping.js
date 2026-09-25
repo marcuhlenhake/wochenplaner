@@ -16,3 +16,21 @@ export function buildShopping(days) {
     return { retailer: g.retailer, total: items.reduce((s, i) => s + (i.price ?? 0), 0), items };
   });
 }
+
+// Textform der Liste zum Teilen (Web-Share-Menü, Zwischenablage). Bereits abgehakte Artikel werden
+// weggelassen, weil "teilen" typischerweise vor dem Einkauf passiert, um zu zeigen, was noch fehlt.
+// Gibt null zurück, wenn nichts mehr offen ist.
+export function buildShareText(days, checkedKeys = []) {
+  const checked = new Set(checkedKeys);
+  const groups = buildShopping(days)
+    .map((g) => ({ retailer: g.retailer, items: g.items.filter((it) => !checked.has(`${g.retailer}|${it.product}`)) }))
+    .filter((g) => g.items.length);
+  if (!groups.length) return null;
+  const money = (n) => (n == null ? "" : ` (${n.toFixed(2).replace(".", ",")} €)`);
+  const lines = ["Einkaufsliste"];
+  for (const g of groups) {
+    lines.push("", `${g.retailer}:`);
+    for (const it of g.items) lines.push(`- ${it.product}${money(it.price)} – ${it.needs.join(", ")}`);
+  }
+  return lines.join("\n");
+}

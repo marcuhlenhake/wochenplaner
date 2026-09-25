@@ -111,6 +111,8 @@ dialog::backdrop { background: rgba(0, 0, 0, .5); }
 dialog p { margin: 0 0 12px; color: var(--muted); }
 .dialog-actions { margin-top: 14px; align-items: stretch; }
 .dialog-actions button { flex: 1; margin: 0; }
+#share-text { width: 100%; font: inherit; color: var(--text); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; resize: vertical; }
+.share-btn { width: 100%; margin-bottom: 14px; }
 .metarow { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; }
 .metarow .meta { flex: 1; }
 button.small { min-height: 36px; font-size: .85rem; padding: 0 10px; flex: none; }
