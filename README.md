@@ -10,7 +10,7 @@ Web-App (PWA) für Android: Du wählst Postleitzahl und Supermärkte, trägst ei
 
 ## Funktionen
 
-- **Gericht tauschen:** Im aufgeklappten Tag ersetzt „Anderes Gericht“ nur diesen einen Tag. Claude vermeidet die übrigen Gerichte der Woche und nutzt bevorzugt Angebote weiter, die für andere Tage ohnehin gekauft werden.
+- **Gericht tauschen:** Im aufgeklappten Tag ersetzt „Anderes Gericht“ nur diesen einen Tag. Claude vermeidet die übrigen Gerichte der Woche und nutzt bevorzugt Angebote weiter, die für andere Tage ohnehin gekauft werden. Kommt trotzdem ein zu ähnliches Gericht zurück (auch unter anderem Namen), fragt der Server automatisch bis zu zweimal erneut nach, bevor er antwortet.
 - **Plan bleibt gespeichert:** Wochenplan, Einkaufsliste und abgehakte Artikel liegen im Browser (localStorage) und überstehen ein Neuladen. „Plan löschen“ entfernt ihn. Sind Angebote abgelaufen, weist die Seite darauf hin.
 - **Mehr Angebote:** Die Suche fragt ca. 135 Begriffe mit bis zu zwei Ergebnisseiten ab. Weitere Begriffe ergänzt du ohne Codeänderung in `.env`, z. B. `OFFER_QUERIES_EXTRA=hirse,ziegenkäse,tempeh`. Vor dem Senden an Claude werden Doppelte entfernt und die Angebote reihum auf die Märkte verteilt (max. 400).
 - **Symbole:** PNG-Symbole für Android und iOS liegen in `public/`. Neu erzeugen mit `node tools/make-icons.mjs`.

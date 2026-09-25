@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { filterOffers } from "../lib/offers.mjs";
 import { normalizeOffer, parseKeys } from "../lib/marktguru.mjs";
 import { SAMPLE_OFFERS } from "../lib/sample-offers.mjs";
-import { enrichPlan, buildPrompt, buildSwapPrompt, buildShopping, requestPlan, requestSwap, selectOffers } from "../lib/planner.mjs";
+import { enrichPlan, buildPrompt, buildSwapPrompt, buildShopping, requestPlan, requestSwap, selectOffers, isSimilarTitle } from "../lib/planner.mjs";
 import { retailerIdFor } from "../lib/retailers.mjs";
 import { validateRequest, validateSwap, checkAccess, createServer } from "../server.mjs";
 
@@ -130,6 +130,46 @@ test("requestSwap liefert ein angereichertes Gericht für den gewünschten Tag",
   assert.equal(dish.ingredients[0].offer.id, "s8");
   assert.equal(dish.ingredients[2].offer, null);
   assert.equal(warnings.length, 1);
+});
+
+test("isSimilarTitle erkennt Wiederholungen, auch unter anderem Namen", () => {
+  assert.equal(isSimilarTitle("Spaghetti mit Tomatensoße", "spaghetti MIT tomatensoße"), true);
+  assert.equal(isSimilarTitle("Spaghetti mit Tomatensoße", "Spaghetti Bolognese"), true);
+  assert.equal(isSimilarTitle("Hähnchen-Pfanne mit Zucchini", "Lachs mit Brokkoli und Reis"), false);
+  assert.equal(isSimilarTitle("Linsen-Curry", "Kichererbsen-Curry"), true);
+});
+
+test("requestSwap fragt bei einer Wiederholung automatisch erneut nach", async () => {
+  process.env.ANTHROPIC_API_KEY = "test";
+  const prompts = [];
+  const dish = (title) => ({ day: "egal", title, minutes: 10, steps: [], ingredients: [{ name: "Reis", amount: "200 g" }] });
+  let call = 0;
+  const fetchImpl = async (url, init) => {
+    prompts.push(JSON.parse(init.body).messages[0].content);
+    call++;
+    const title = call === 1 ? "Spaghetti mit Tomatensoße" : "Linsen-Curry";
+    return { ok: true, json: async () => ({ content: [{ type: "tool_use", input: { dish: dish(title) } }] }) };
+  };
+  const { dish: result, warnings } = await requestSwap(
+    { offers: SAMPLE_OFFERS, dislikes: [], persons: 2, diet: "alles", day: "Montag", avoid: ["Spaghetti mit Tomatensoße"] },
+    { fetchImpl },
+  );
+  assert.equal(call, 2);
+  assert.equal(result.title, "Linsen-Curry");
+  assert.equal(warnings.length, 0);
+  assert.match(prompts[1], /Spaghetti mit Tomatensoße/); // zweiter Versuch nennt den abgelehnten Vorschlag zusätzlich
+});
+
+test("requestSwap gibt nach mehreren Wiederholungen trotzdem ein Ergebnis mit Warnung zurück", async () => {
+  process.env.ANTHROPIC_API_KEY = "test";
+  const dish = { day: "egal", title: "Spaghetti mit Tomatensoße", minutes: 10, steps: [], ingredients: [] };
+  const fetchImpl = async () => ({ ok: true, json: async () => ({ content: [{ type: "tool_use", input: { dish } }] }) });
+  const { dish: result, warnings } = await requestSwap(
+    { offers: SAMPLE_OFFERS, dislikes: [], persons: 2, diet: "alles", day: "Montag", avoid: ["Spaghetti mit Tomatensoße"] },
+    { fetchImpl },
+  );
+  assert.equal(result.title, "Spaghetti mit Tomatensoße");
+  assert.match(warnings[0], /Kein ausreichend anderes Gericht/);
 });
 
 test("buildPrompt nennt Abneigungen und Angebote", () => {
