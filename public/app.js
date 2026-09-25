@@ -1,4 +1,4 @@
-import { buildShopping, buildShareText } from "./shopping.js";
+import { buildShopping, buildShareText, groupOffers } from "./shopping.js";
 
 const $ = (id) => document.getElementById(id);
 const SETTINGS_KEY = "wochenplaner.settings.v1";
@@ -252,12 +252,60 @@ function showShareFallback(text) {
   $("share-dialog").showModal();
 }
 
+const TABS = ["plan", "shop", "offers"];
+
 function selectTab(name) {
-  const plan = name === "plan";
-  $("tab-plan").ariaSelected = String(plan);
-  $("tab-shop").ariaSelected = String(!plan);
-  $("plan").hidden = !plan;
-  $("shop").hidden = plan;
+  for (const t of TABS) {
+    $(`tab-${t}`).ariaSelected = String(t === name);
+    $(t).hidden = t !== name;
+  }
+  if (name === "offers") loadOffersTab();
+}
+
+// Angebote werden nur für die aktuelle Auswahl (Postleitzahl, Märkte, Abneigungen) im Speicher gehalten,
+// nicht in localStorage – beim nächsten Öffnen der App genügt ein neuer, meist gecachter Serveraufruf.
+let offersCache = null;
+
+async function loadOffersTab() {
+  const { zip, retailers, dislikes } = state.plan.request;
+  const key = JSON.stringify({ zip, retailers, dislikes });
+  if (offersCache?.key === key) return renderOffers(offersCache.offers, offersCache.provider);
+  const box = $("offers");
+  box.replaceChildren(el("p", { className: "meta", textContent: "Angebote werden geladen …" }));
+  try {
+    const data = await postJson("/api/offers", { zip, retailers, dislikes });
+    offersCache = { key, offers: data.offers, provider: data.provider };
+    renderOffers(data.offers, data.provider);
+  } catch (err) {
+    box.replaceChildren(el("p", { className: "notice", textContent: err.message }));
+  }
+}
+
+function renderOffers(offers, provider) {
+  const box = $("offers");
+  if (!offers.length) return box.replaceChildren(el("p", { className: "meta", textContent: "Keine Angebote gefunden." }));
+  box.replaceChildren(
+    el("p", { className: "meta", textContent: `${offers.length} Angebote${provider === "sample" ? " (Demodaten)" : ""}` }),
+    ...groupOffers(offers).map((g) =>
+      el(
+        "div",
+        { className: "shopgroup" },
+        el("h3", {}, el("span", { textContent: g.retailer })),
+        el(
+          "ul",
+          { className: "offer-list" },
+          ...g.items.map((o) => {
+            const meta = [o.description, o.price != null ? eur(o.price) : null, o.validTo ? `gültig bis ${new Date(o.validTo).toLocaleDateString("de-DE")}` : null]
+              .filter(Boolean)
+              .join(" · ");
+            const children = [el("span", { className: "offer-name", textContent: o.product })];
+            if (meta) children.push(el("span", { className: "offer-meta", textContent: meta }));
+            return el("li", {}, ...children);
+          }),
+        ),
+      ),
+    ),
+  );
 }
 
 function deletePlan() {
@@ -321,6 +369,7 @@ async function init() {
   });
   $("tab-plan").addEventListener("click", () => selectTab("plan"));
   $("tab-shop").addEventListener("click", () => selectTab("shop"));
+  $("tab-offers").addEventListener("click", () => selectTab("offers"));
   $("delete-plan").addEventListener("click", deletePlan);
   $("token-cancel").addEventListener("click", () => $("token-dialog").close("cancel"));
   $("share-shop").addEventListener("click", shareShoppingList);

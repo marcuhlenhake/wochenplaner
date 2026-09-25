@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { filterOffers } from "../lib/offers.mjs";
 import { normalizeOffer, parseKeys } from "../lib/marktguru.mjs";
 import { SAMPLE_OFFERS } from "../lib/sample-offers.mjs";
-import { enrichPlan, buildPrompt, buildSwapPrompt, buildShopping, buildShareText, requestPlan, requestSwap, selectOffers, isSimilarTitle } from "../lib/planner.mjs";
+import { enrichPlan, buildPrompt, buildSwapPrompt, buildShopping, buildShareText, groupOffers, requestPlan, requestSwap, selectOffers, isSimilarTitle } from "../lib/planner.mjs";
 import { retailerIdFor } from "../lib/retailers.mjs";
 import { validateRequest, validateSwap, checkAccess, createServer } from "../server.mjs";
 
@@ -98,6 +98,18 @@ test("buildShareText lässt abgehakte Artikel weg und gruppiert nach Markt", () 
   assert.match(partial, /REWE/);
 
   assert.equal(buildShareText(plan.days, ["REWE|Reis", "LIDL|Feta"]), null);
+});
+
+test("groupOffers gruppiert nach Markt, sortiert alphabetisch und ignoriert unbekannte Ketten", () => {
+  const offers = [
+    { retailerId: "lidl", retailer: "LIDL", product: "Zucchini" },
+    { retailerId: "lidl", retailer: "LIDL", product: "Äpfel" },
+    { retailerId: "rewe", retailer: "REWE", product: "Milch" },
+    { retailerId: null, retailer: "Sonstiges", product: "X" },
+  ];
+  const groups = groupOffers(offers);
+  assert.deepEqual(groups.map((g) => g.retailer), ["LIDL", "REWE"]);
+  assert.deepEqual(groups[0].items.map((i) => i.product), ["Äpfel", "Zucchini"]);
 });
 
 test("enrichPlan setzt fehlenden Nährwert auf null statt 0", () => {
@@ -283,6 +295,11 @@ test("HTTP: Config, Validierungsfehler und statische Dateien", async () => {
     assert.equal(bad.status, 400);
     const badSwap = await fetch(`${base}/api/swap`, { method: "POST", body: JSON.stringify({ zip: "45127", retailers: ["rewe"], day: "x" }) });
     assert.equal(badSwap.status, 400);
+    const offersRes = await fetch(`${base}/api/offers`, { method: "POST", body: JSON.stringify({ zip: "45127", retailers: ["rewe"] }) });
+    assert.equal(offersRes.status, 200);
+    const offersBody = await offersRes.json();
+    assert.ok(offersBody.offers.every((o) => o.retailerId === "rewe"));
+    assert.equal(offersBody.provider, "sample");
     assert.equal((await fetch(`${base}/shopping.js`)).status, 200);
     assert.equal((await fetch(`${base}/icon-192.png`)).headers.get("content-type"), "image/png");
 

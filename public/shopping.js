@@ -17,6 +17,21 @@ export function buildShopping(days) {
   });
 }
 
+// Gruppiert rohe Angebote nach Markt für den "Angebote"-Reiter (unabhängig vom Wochenplan).
+// Innerhalb eines Markts alphabetisch sortiert, die Märkte selbst ebenfalls.
+export function groupOffers(offers) {
+  const groups = new Map();
+  for (const o of offers) {
+    if (!o.retailerId) continue;
+    const g = groups.get(o.retailer) ?? { retailer: o.retailer, items: [] };
+    g.items.push(o);
+    groups.set(o.retailer, g);
+  }
+  return [...groups.values()]
+    .map((g) => ({ retailer: g.retailer, items: g.items.slice().sort((a, b) => a.product.localeCompare(b.product, "de")) }))
+    .sort((a, b) => a.retailer.localeCompare(b.retailer, "de"));
+}
+
 // Textform der Liste zum Teilen (Web-Share-Menü, Zwischenablage). Bereits abgehakte Artikel werden
 // weggelassen, weil "teilen" typischerweise vor dem Einkauf passiert, um zu zeigen, was noch fehlt.
 // Gibt null zurück, wenn nichts mehr offen ist.

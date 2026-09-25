@@ -135,3 +135,8 @@ button.swap { width: 100%; }
 .shopgroup label { display: flex; gap: 10px; color: var(--text); font-size: 1rem; padding: 6px 0; margin: 0; }
 .shopgroup input { width: 20px; min-height: 20px; margin-top: 3px; }
 .shopgroup .need { display: block; color: var(--muted); font-size: .85rem; }
+.offer-list { list-style: none; margin: 0; padding: 0; }
+.offer-list li { padding: 6px 0; border-top: 1px solid var(--line); }
+.offer-list li:first-child { border-top: none; }
+.offer-name { display: block; }
+.offer-meta { display: block; color: var(--muted); font-size: .85rem; }

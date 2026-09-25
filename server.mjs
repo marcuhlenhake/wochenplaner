@@ -96,6 +96,11 @@ async function handleApi(req, res, url) {
     const plan = await requestPlan({ ...input, offers });
     return send(res, 200, { ...plan, offerCount: offers.length, provider: provider() });
   }
+  if (req.method === "POST" && url.pathname === "/api/offers") {
+    const input = validateRequest(await readJson(req));
+    const offers = await loadOffers(input);
+    return send(res, 200, { offers, provider: provider() });
+  }
   if (req.method === "POST" && url.pathname === "/api/swap") {
     const input = validateSwap(await readJson(req));
     const offers = await loadOffers(input);
