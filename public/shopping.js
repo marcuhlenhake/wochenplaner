@@ -6,7 +6,7 @@ export function buildShopping(days) {
       if (!ing.offer) continue;
       const g = groups.get(ing.offer.retailer) ?? { retailer: ing.offer.retailer, items: new Map() };
       const it = g.items.get(ing.offer.product) ?? { product: ing.offer.product, price: ing.offer.price, needs: [] };
-      it.needs.push(`${ing.amount} (${day.day})`);
+      it.needs.push(ing.amount);
       g.items.set(ing.offer.product, it);
       groups.set(ing.offer.retailer, g);
     }

@@ -90,7 +90,7 @@ test("buildShareText lässt abgehakte Artikel weg und gruppiert nach Markt", () 
   ] };
   const full = buildShareText(plan.days, []);
   assert.match(full, /REWE:/);
-  assert.match(full, /- Reis \(1,99 €\) – 200 g \(Montag\), 100 g \(Dienstag\)/);
+  assert.match(full, /- Reis \(1,99 €\) – 200 g, 100 g/);
   assert.match(full, /LIDL:/);
 
   const partial = buildShareText(plan.days, ["LIDL|Feta"]);
