@@ -1,4 +1,5 @@
 import { buildShopping, buildShareText, buildPlanShareText, buildOffersShareText, groupOffers } from "./shopping.js";
+import { groupOffersByCategory } from "./categories.js";
 
 const $ = (id) => document.getElementById(id);
 const SETTINGS_KEY = "wochenplaner.settings.v1";
@@ -261,7 +262,7 @@ const sharePlan = () => shareText(buildPlanShareText(state.plan.days), { title: 
 
 const shareOffers = () => {
   if (!offersCache) return showNotice("Bitte zuerst den Reiter „Angebote“ abwarten, bis die Angebote geladen sind.", "info");
-  return shareText(buildOffersShareText(offersCache.offers), { title: "Angebote", emptyMessage: "Keine Angebote zum Teilen vorhanden." });
+  return shareText(buildOffersShareText(offersCache.offers, offersView), { title: "Angebote", emptyMessage: "Keine Angebote zum Teilen vorhanden." });
 };
 
 const TABS = ["plan", "shop", "offers"];
@@ -293,30 +294,47 @@ async function loadOffersTab() {
   }
 }
 
+// "category": nach Warengruppe (Obst, Gemüse, …), der Markt steht dann beim Angebot.
+// "retailer": nach Markt. Die Wahl bleibt im Browser gespeichert.
+const OFFERS_VIEW_KEY = "wochenplaner.offerview.v1";
+let offersView = readStore(OFFERS_VIEW_KEY) === "retailer" ? "retailer" : "category";
+
+function setOffersView(view) {
+  offersView = view;
+  writeStore(OFFERS_VIEW_KEY, view);
+  $("view-category").setAttribute("aria-pressed", String(view === "category"));
+  $("view-retailer").setAttribute("aria-pressed", String(view === "retailer"));
+  if (offersCache) renderOffers(offersCache.offers, offersCache.provider);
+}
+
 function renderOffers(offers, provider) {
   const box = $("offers-groups");
   if (!offers.length) return box.replaceChildren(el("p", { className: "meta", textContent: "Keine Angebote gefunden." }));
+  const byCategory = offersView === "category";
+  const groups = byCategory ? groupOffersByCategory(offers) : groupOffers(offers).map((g) => ({ ...g, label: g.retailer }));
   box.replaceChildren(
     el("p", { className: "meta", textContent: `${offers.length} Angebote${provider === "sample" ? " (Demodaten)" : ""}` }),
-    ...groupOffers(offers).map((g) =>
-      el(
-        "div",
-        { className: "shopgroup" },
-        el("h3", {}, el("span", { textContent: g.retailer })),
-        el(
-          "ul",
-          { className: "offer-list" },
-          ...g.items.map((o) => {
-            const meta = [o.description, o.price != null ? eur(o.price) : null, o.validTo ? `gültig bis ${new Date(o.validTo).toLocaleDateString("de-DE")}` : null]
-              .filter(Boolean)
-              .join(" · ");
-            const children = [el("span", { className: "offer-name", textContent: o.product })];
-            if (meta) children.push(el("span", { className: "offer-meta", textContent: meta }));
-            return el("li", {}, ...children);
-          }),
-        ),
-      ),
-    ),
+    ...groups.map((g) => {
+      const items = g.items.map((o) => {
+        const meta = [
+          byCategory ? o.retailer : null,
+          o.description,
+          o.price != null ? eur(o.price) : null,
+          o.validTo ? `gültig bis ${new Date(o.validTo).toLocaleDateString("de-DE")}` : null,
+        ]
+          .filter(Boolean)
+          .join(" · ");
+        const children = [el("span", { className: "offer-name", textContent: o.product })];
+        if (meta) children.push(el("span", { className: "offer-meta", textContent: meta }));
+        return el("li", {}, ...children);
+      });
+      const group = el("details", { className: "shopgroup offer-group", open: true });
+      group.append(
+        el("summary", {}, el("span", { textContent: g.label }), el("span", { className: "count", textContent: String(g.items.length) })),
+        el("ul", { className: "offer-list" }, ...items),
+      );
+      return group;
+    }),
   );
 }
 
@@ -387,6 +405,9 @@ async function init() {
   $("share-plan").addEventListener("click", sharePlan);
   $("share-shop").addEventListener("click", shareShoppingList);
   $("share-offers").addEventListener("click", shareOffers);
+  $("view-category").addEventListener("click", () => setOffersView("category"));
+  $("view-retailer").addEventListener("click", () => setOffersView("retailer"));
+  setOffersView(offersView);
   $("share-close").addEventListener("click", () => $("share-dialog").close());
   $("share-copy").addEventListener("click", async () => {
     try {

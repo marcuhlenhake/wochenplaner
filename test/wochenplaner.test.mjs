@@ -119,12 +119,22 @@ test("buildPlanShareText listet alle Tage mit Zutaten und Nährwert", () => {
   assert.equal(buildPlanShareText([]), null);
 });
 
-test("buildOffersShareText listet alle Angebote gruppiert nach Markt", () => {
-  const text = buildOffersShareText(SAMPLE_OFFERS.filter((o) => o.retailerId === "lidl"));
-  assert.match(text, /^Angebote/);
-  assert.match(text, /LIDL:/);
-  assert.match(text, /- Feta \(1,29 €\) – 200 g/);
+test("buildOffersShareText: nach Kategorie (Standard) mit Markt in der Zeile, oder nach Markt", () => {
+  const lidl = SAMPLE_OFFERS.filter((o) => o.retailerId === "lidl");
+
+  const byCategory = buildOffersShareText(lidl);
+  assert.match(byCategory, /^Angebote/);
+  assert.match(byCategory, /Käse:\n- Feta \(1,29 €\) – LIDL, 200 g/);
+  assert.match(byCategory, /Gemüse:/);
+  assert.doesNotMatch(byCategory, /^LIDL:/m);
+
+  const byRetailer = buildOffersShareText(lidl, "retailer");
+  assert.match(byRetailer, /LIDL:/);
+  assert.match(byRetailer, /- Feta \(1,29 €\) – 200 g/);
+  assert.doesNotMatch(byRetailer, /Käse:/);
+
   assert.equal(buildOffersShareText([]), null);
+  assert.equal(buildOffersShareText([], "retailer"), null);
 });
 
 test("packagesFor rechnet Mengen in Gebinde um und rundet auf", () => {

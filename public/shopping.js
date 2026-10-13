@@ -1,3 +1,5 @@
+import { groupOffersByCategory } from "./categories.js";
+
 // Mengeneinheiten, die sich sauber umrechnen lassen. Alles andere (Stück, Dose, Scheibe, Bund, Zehe,
 // Wörter ohne erkannte Einheit …) wird als Stückzahl gezählt.
 const UNIT_FACTORS = {
@@ -97,14 +99,22 @@ export function buildPlanShareText(days) {
 }
 
 // Textform aller gefundenen Angebote (Reiter "Angebote") zum Teilen, unabhängig vom Wochenplan.
-export function buildOffersShareText(offers) {
-  const groups = groupOffers(offers);
+// mode "category": nach Warengruppe gegliedert, der Markt steht in der Zeile; mode "retailer": nach Markt.
+export function buildOffersShareText(offers, mode = "category") {
+  const byCategory = mode !== "retailer";
+  const groups = byCategory ? groupOffersByCategory(offers) : groupOffers(offers).map((g) => ({ ...g, label: g.retailer }));
   if (!groups.length) return null;
   const lines = ["Angebote"];
   for (const g of groups) {
-    lines.push("", `${g.retailer}:`);
+    lines.push("", `${g.label}:`);
     for (const o of g.items) {
-      const meta = [o.description, o.validTo ? `gültig bis ${new Date(o.validTo).toLocaleDateString("de-DE")}` : null].filter(Boolean).join(", ");
+      const meta = [
+        byCategory ? o.retailer : null,
+        o.description,
+        o.validTo ? `gültig bis ${new Date(o.validTo).toLocaleDateString("de-DE")}` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
       lines.push(`- ${o.product}${formatEur(o.price)}${meta ? ` – ${meta}` : ""}`);
     }
   }

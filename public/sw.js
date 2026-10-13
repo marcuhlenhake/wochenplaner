@@ -1,5 +1,5 @@
-const CACHE = "wochenplaner-shell-v2";
-const SHELL = ["/", "/style.css", "/app.js", "/shopping.js", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE = "wochenplaner-shell-v3";
+const SHELL = ["/", "/style.css", "/app.js", "/shopping.js", "/categories.js", "/manifest.webmanifest", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));
